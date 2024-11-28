@@ -22,7 +22,8 @@ The objective of this project is to build a Longitudinal Access and Adjudication
 
 ### Project Architecture Diagram
 
-[Project Architecture]()
+[HealthCare Architecture diagram](https://github.com/user-attachments/assets/eaf5e055-26f4-4845-a8e6-9e6faca2cd84)
+
 
 ### Environment Setup
 
