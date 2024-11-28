@@ -1,0 +1,159 @@
+{
+    "name": "PL_MASTER_ADF_AND_SYN",
+    "properties": {
+        "activities": [
+            {
+                "name": "ACT_GEN_EPIPE_SRC_VALIDATION",
+                "description": "Validate source data files with control file data and automate mail alert in case of not matched condition with files name and status",
+                "type": "ExecutePipeline",
+                "dependsOn": [],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_SYN_NOTE_VALIDATION_SRC",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "ACT_GEN_EPIPE_SRC_TO_BRONZE_LOADING",
+                "description": "copy source data files from client adls and store bronze container of our adls with todaytimestamp",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "ACT_GEN_EPIPE_SRC_VALIDATION",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_ADLS_SRC_TO_BRONZE",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "PRM_PL_ACT_GMETA_FILE_SYSTEM": {
+                            "value": "@pipeline().parameters.PRM_MASTER_PL_ACT_EPIPE_GMETA_SRC_TO_BRONZE__FILE_SYSTEM",
+                            "type": "Expression"
+                        },
+                        "PRM_PL_ACT_GMETA_FILE_subfolder": {
+                            "value": "@pipeline().parameters.PRM_MASTER_PL_ACT_EPIPE_GMETA_SRC_TO_BRONZE_FILE_SUBFOLDER",
+                            "type": "Expression"
+                        },
+                        "PRM_PL_ACT_COPY_SRC_FILE_SYSTEM": {
+                            "value": "@pipeline().parameters.PRM_MASTER_PL_ACT_EPIPE_COPY_SRC_SRC_TO_BRONZE_FILE_SYSTEM",
+                            "type": "Expression"
+                        },
+                        "PRM_PL_ACT_COPY_SINK_FILE_SYSTEM": {
+                            "value": "@pipeline().parameters.PRM_MASTER_PL_ACT_EPIPE_COPY_SINK_SRC_TO_BRONZE_FILE_SYSTEM",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "ACT_GEN_EPIPE_BRONZE_VALIDATION_TO_SILVER_LOADING",
+                "description": "Validate bronze data files for primary key validation in file data and load final data to silver container in parquet format",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "ACT_GEN_EPIPE_SRC_TO_BRONZE_LOADING",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_SYN_NOTE_VALIDATION_BRONZE_TO_SILVER",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "ACT_GEN_EPIPE_SILVER_VALIDATION_TO_GOLD_LOADING",
+                "description": "IMPLEMENT SCD1 AND SCD2 TYPE ON SILVER DATASETS",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "ACT_GEN_EPIPE_BRONZE_VALIDATION_TO_SILVER_LOADING",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_SYN_NOTE_VALIDATION_SILVER_TO_GOLD",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "ACT_GEN_EPIPE_VIEW_UPDATES",
+                "description": "create or alter views on updated data in gold container",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "ACT_GEN_EPIPE_SILVER_VALIDATION_TO_GOLD_LOADING",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_SYN_VIEWS_CREATE_OR_UPDATE",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            }
+        ],
+        "parameters": {
+            "PRM_MASTER_PL_ACT_EPIPE_GMETA_SRC_TO_BRONZE__FILE_SYSTEM": {
+                "type": "string",
+                "defaultValue": "validation"
+            },
+            "PRM_MASTER_PL_ACT_EPIPE_GMETA_SRC_TO_BRONZE_FILE_SUBFOLDER": {
+                "type": "string",
+                "defaultValue": "Output.csv"
+            },
+            "PRM_MASTER_PL_ACT_EPIPE_COPY_SRC_SRC_TO_BRONZE_FILE_SYSTEM": {
+                "type": "string",
+                "defaultValue": "source"
+            },
+            "PRM_MASTER_PL_ACT_EPIPE_COPY_SINK_SRC_TO_BRONZE_FILE_SYSTEM": {
+                "type": "string",
+                "defaultValue": "bronze"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-09-30T12:42:30Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

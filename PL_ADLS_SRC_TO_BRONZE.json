@@ -1,0 +1,195 @@
+{
+    "name": "PL_ADLS_SRC_TO_BRONZE",
+    "properties": {
+        "activities": [
+            {
+                "name": "ACT_GEN_META_FIND_OUTPUT_FILE",
+                "type": "GetMetadata",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "DS_ADLS_PP2_OUTPUT_LOG",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "PRM_DS_FILE_SYSTEM": {
+                                "value": "@pipeline().parameters.PRM_PL_ACT_GMETA_FILE_SYSTEM",
+                                "type": "Expression"
+                            },
+                            "PRM_DS_FILE_SUBFOLDER": {
+                                "value": "@pipeline().parameters.PRM_PL_ACT_GMETA_FILE_subfolder",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "fieldList": [
+                        "childItems"
+                    ],
+                    "storeSettings": {
+                        "type": "AzureBlobFSReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "DelimitedTextReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "ACT_ITRC_FIL_REMOVE_SUCCESS_FILE",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "ACT_GEN_META_FIND_OUTPUT_FILE",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('ACT_GEN_META_FIND_OUTPUT_FILE').output.childItems",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@not(contains(item().name, '_SUCCESS'))\n",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "ACT_ITRC_FOR_FIND FILE_NAME",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "ACT_ITRC_FIL_REMOVE_SUCCESS_FILE",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('ACT_ITRC_FIL_REMOVE_SUCCESS_FILE').output.Value",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "ACT_GEN_LKP_READ_FILE_CONTAIN",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "DelimitedTextSource",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSReadSettings",
+                                        "recursive": true,
+                                        "enablePartitionDiscovery": false
+                                    },
+                                    "formatSettings": {
+                                        "type": "DelimitedTextReadSettings"
+                                    }
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_ADLS_PP2_OUTPUT_LOG_TO_VALIDATION",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "PRM_DS_File_system": {
+                                            "value": "@pipeline().parameters.PRM_PL_ACT_GMETA_FILE_SYSTEM",
+                                            "type": "Expression"
+                                        },
+                                        "PRM_DS_File_subfolder": {
+                                            "value": "@pipeline().parameters.PRM_PL_ACT_GMETA_FILE_subfolder",
+                                            "type": "Expression"
+                                        },
+                                        "PRM_DS_File_name": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "ACT_GEN_EPIPE_COPY_FILE TO_BRONZE",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [
+                                {
+                                    "activity": "ACT_GEN_LKP_READ_FILE_CONTAIN",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_ADLS_SRC_TO_BRONZE_PART1",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "PRM_CPL_LKP_OUTPUT_FILE": {
+                                        "value": "@activity('ACT_GEN_LKP_READ_FILE_CONTAIN').output.value",
+                                        "type": "Expression"
+                                    },
+                                    "PRM_PL_ACT_COPY_SRC_FILE_SYSTEM": {
+                                        "value": "@pipeline().parameters.PRM_PL_ACT_COPY_SRC_FILE_SYSTEM",
+                                        "type": "Expression"
+                                    },
+                                    "PRM_PL_ACT_COPY_SINK_FILE_SYSTEM": {
+                                        "value": "@pipeline().parameters.PRM_PL_ACT_COPY_SRC_FILE_SYSTEM",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "PRM_PL_ACT_GMETA_FILE_SYSTEM": {
+                "type": "string",
+                "defaultValue": "validation"
+            },
+            "PRM_PL_ACT_GMETA_FILE_subfolder": {
+                "type": "string",
+                "defaultValue": "Output.csv"
+            },
+            "PRM_PL_ACT_COPY_SRC_FILE_SYSTEM": {
+                "type": "string",
+                "defaultValue": "source"
+            },
+            "PRM_PL_ACT_COPY_SINK_FILE_SYSTEM": {
+                "type": "string",
+                "defaultValue": "bronze"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-09-30T12:42:30Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,50 @@
+{
+    "name": "PL_SYN_NOTE_VALIDATION_BRONZE_TO_SILVER",
+    "properties": {
+        "activities": [
+            {
+                "name": "ACT_SYN_NOTE_VALIDATION_PK",
+                "description": "Validate bronze data files for primary key validation in file data and load final data to silver container in parquet format",
+                "type": "SynapseNotebook",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.1:00:00",
+                    "retry": 3,
+                    "retryIntervalInSeconds": 300,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebook": {
+                        "referenceName": {
+                            "value": "Synapse_NB_Data_Validation_bronze_to_silver",
+                            "type": "Expression"
+                        },
+                        "type": "NotebookReference"
+                    },
+                    "snapshot": true,
+                    "sparkPool": {
+                        "referenceName": {
+                            "value": "SparkPool2448PP",
+                            "type": "Expression"
+                        },
+                        "type": "BigDataPoolReference"
+                    },
+                    "executorSize": "Small",
+                    "conf": {
+                        "spark.dynamicAllocation.enabled": false
+                    },
+                    "driverSize": "Small"
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_SYN_AzureSynapseArtifacts1",
+                    "type": "LinkedServiceReference"
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2024-09-26T17:32:52Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

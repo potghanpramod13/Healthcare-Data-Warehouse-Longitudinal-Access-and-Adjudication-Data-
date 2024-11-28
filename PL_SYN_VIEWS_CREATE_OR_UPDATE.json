@@ -1,0 +1,93 @@
+{
+    "name": "PL_SYN_VIEWS_CREATE_OR_UPDATE",
+    "properties": {
+        "activities": [
+            {
+                "name": "ACT_ITRC_FOR_NAMES",
+                "description": "Iterate config file data of table names and view names",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "ACT_GEN_META_DELTAFOLDER_NAMES",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('ACT_GEN_META_DELTAFOLDER_NAMES').output.childItems",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "ACT_GEN_SPRC_VIEW_UPDATES",
+                            "description": "drop old views and create new view on updated data in gold container",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[PROJECT1].[CreateOrAlterDeltaView]",
+                                "storedProcedureParameters": {
+                                    "DeltaFolderName": {
+                                        "value": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "LS_SYN_AzureSynapseAnalytics1",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "ACT_GEN_META_DELTAFOLDER_NAMES",
+                "type": "GetMetadata",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "DS_ADLS_PP2_gold",
+                        "type": "DatasetReference"
+                    },
+                    "fieldList": [
+                        "childItems"
+                    ],
+                    "storeSettings": {
+                        "type": "AzureBlobFSReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "ParquetReadSettings"
+                    }
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2024-09-30T08:02:46Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

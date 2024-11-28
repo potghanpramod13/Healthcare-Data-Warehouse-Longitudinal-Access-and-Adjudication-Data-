@@ -1,0 +1,50 @@
+{
+    "name": "PL_SYN_NOTE_VALIDATION_SILVER_TO_GOLD",
+    "properties": {
+        "activities": [
+            {
+                "name": "ACT_SYN_NOTE_IMPLEMENT_SCD1_AND_SCD2",
+                "description": "IMPLEMENT SCD1 AND SCD2 TYPE ON SILVER DATASETS",
+                "type": "SynapseNotebook",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.1:00:00",
+                    "retry": 3,
+                    "retryIntervalInSeconds": 300,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebook": {
+                        "referenceName": {
+                            "value": "Synapse_NB_SCD_DIM_TBL_silver_to_gold",
+                            "type": "Expression"
+                        },
+                        "type": "NotebookReference"
+                    },
+                    "snapshot": true,
+                    "sparkPool": {
+                        "referenceName": {
+                            "value": "SparkPool2448PP",
+                            "type": "Expression"
+                        },
+                        "type": "BigDataPoolReference"
+                    },
+                    "executorSize": "Small",
+                    "conf": {
+                        "spark.dynamicAllocation.enabled": false
+                    },
+                    "driverSize": "Small"
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_SYN_AzureSynapseArtifacts1",
+                    "type": "LinkedServiceReference"
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2024-09-26T17:32:52Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}
